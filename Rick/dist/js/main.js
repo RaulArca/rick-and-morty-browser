@@ -2,6 +2,7 @@ const gridContent= document.getElementsByClassName("grid-content").item(0)
 const searchInput = document.getElementById("CharacterBrowser");
 const selectState = document.getElementById("stateSelect");
 const selectGender = document.getElementById("genderSelect");
+const selectSearch = document.getElementById("searchSelect")
 let next= ""
 let pages=0
 let page =1
@@ -16,17 +17,7 @@ function debounce(func, wait = 500) {
   };
 }
 function init(){
-  fetch(url)
-    .then((response) => response.json())
-    .then((data) =>{
-        gridContent.innerHTML=""
-        next = data['info']['next']
-        pages = data['info']['pages']
-        data['results'].map(function (character){
-          characterBox(character)
-        })
-      }
-    );
+  search("","","")
 
 }
 
@@ -48,59 +39,88 @@ function nextCharacter(){
 
 
 const processChange = debounce((value) =>{
-    let characterUrl
-    if(url == basicUrl)
-      characterUrl = url +"?name="+ value;
-    else  characterUrl = url + "&&name="+ value;
-    console.log(characterUrl)
-    fetch(characterUrl)
-      .then((response) => response.json())
-      .then((data) =>{
-          page =0
-          gridContent.innerHTML=""
-          next = data['info']['next']
-          pages = data['info']['pages']
-          data['results'].map(function (character){
-            characterBox(character)
-          })
-        }
-      );
+    search(value,selectState.value,selectGender.value);
   }
 
 
 );
 
 function characterBox(character){
-  console.log(character)
-  const newCharacter = document.createElement('article');
-  newCharacter.className = "box";
+  const flipCard = document.createElement("div");
+  flipCard.className="flip-card";
+  const newCharacter = document.createElement('div');
+  newCharacter.className = "flip-card-inner";
+  const frontCard = document.createElement('div');
+  frontCard.className = "flip-card-front"
+  const backCard = document.createElement('div');
+
+  backCard.className = "flip-card-back";
+  const imageBg=document.createElement("img");
+  imageBg.className="flip-card-back-bg";
+  imageBg.src=
+    "    https://s3.amazonaws.com/www-inside-design/uploads/2018/01/rick-morty-sq.jpg";
+
+  const backCardContent = document.createElement('div');
+  backCardContent.className = "flip-card-back-content"
+
   const image=document.createElement('img')
   image.src = character['image' ]
   image.className = "";
-  const name = document.createElement('a')
-  name.className = "";
-  name.text=character['name' ]
-
-  const state = document.createElement('a')
-  state.className= "state"
-
-  state.text=character['status' ]
-  switch (state.text) {
+  const name = document.createElement('h3')
+  name.className = "name";
+  name.text=character['name' ];
+  let text = document.createTextNode(character['name' ])
+  name.appendChild(text);
+  const state = document.createElement('p')
+  text = document.createTextNode(character['status' ])
+  state.className= "state";
+  switch (character['status' ]) {
     case 'Alive':
-      state.style="background-color: green"
+      state.className+= " alive"
       break
     case 'unknown':
-      state.style="background-color: orange"
+      state.className+= " unknown"
       break
     case 'Dead':
-      state.style="background-color: red"
+      state.className+= " dead"
       break
   }
-  newCharacter.appendChild(image)
-  newCharacter.appendChild(name)
-  newCharacter.appendChild(state)
-  gridContent.appendChild(newCharacter)
+  state.appendChild(text);
+  const species = document.createElement('p')
+  text = document.createTextNode("Specie: " +character['species' ]);
+  species.appendChild(text);
+  const type = document.createElement('p');
+  text = document.createTextNode("sub-Specie: "+character['type' ]);
+  type.appendChild(text);
 
+
+  frontCard.appendChild(image);
+  backCardContent.appendChild(name);
+  backCardContent.appendChild(state);
+  backCardContent.appendChild(species);
+  backCardContent.appendChild(type);
+  backCard.appendChild(imageBg)
+  backCard.appendChild(backCardContent)
+  newCharacter.appendChild(frontCard);
+  newCharacter.appendChild(backCard);
+  flipCard.appendChild(newCharacter)
+  gridContent.appendChild(flipCard);
+
+}
+function search(search, status,gender){
+  let characterUrl = basicUrl+ "?status="+status+"&&gender="+gender+ selectSearch.value+search;
+  fetch(characterUrl)
+    .then((response) => response.json())
+    .then((data) =>{
+        page =0
+        gridContent.innerHTML=""
+        next = data['info']['next']
+        pages = data['info']['pages']
+        data['results'].map(function (character){
+          characterBox(character)
+        })
+      }
+    );
 }
 
 document.addEventListener('scroll', () => {
@@ -113,18 +133,28 @@ searchInput.addEventListener("keyup", (e) => {
 });
 
 selectState.addEventListener("change",(value)=>{
-  let aux
-  let gender = selectGender.value;
-  let name = searchInput.value;
-  aux = basicUrl+ "?state="+value.target.value+"&&gender="+gender;
-  url = aux;
-  processChange(searchInput.value)
+
+  search(searchInput.value,value.target.value,selectGender.value);
 })
 selectGender.addEventListener("change",(value)=>{
-  let aux
-  let state = selectState.value;
-  let name = searchInput.value;
-  aux = basicUrl+ "?state="+state+"&&gender="+value.target.value
-  url = aux;
-  processChange(searchInput.value)
+
+  search(searchInput.value,selectState.value,value.target.value);
+})
+
+selectSearch.addEventListener("change",(value)=>{
+  switch (value.target.value){
+    case "&name=":
+      searchInput.placeholder= "search for a sub-specie";
+      searchInput.value=""
+      break;
+    case "&species=":
+      searchInput.placeholder= "search for a sub-specie"
+      searchInput.value=""
+      break;
+    case "&type=":
+      searchInput.placeholder= "search for a sub-specie"
+      searchInput.value=""
+      break;
+  }
+
 })
