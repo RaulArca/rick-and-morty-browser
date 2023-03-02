@@ -149,6 +149,7 @@ p {
 
 html {
   min-height: 100%;
+  font-family: Arial;
   position: relative; }
 
 footer {
